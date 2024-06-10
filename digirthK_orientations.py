@@ -7,7 +7,7 @@ OUTGOING_ASSIGNMENT = "1"  # assignment coming from the vertex to be added
 INCOMING_ASSIGNMENT = "0"  # assignment going to the vertex to be added
 
 
-def time_digirthK_orientations(graph, digirth=Infinity):
+def time_digirthK_orientations(graph, digirth=+Infinity):
     initial_t = process_time_ns()
     orientations = digirthK_orientations(graph, digirth)
     final_t = process_time_ns()
@@ -16,7 +16,7 @@ def time_digirthK_orientations(graph, digirth=Infinity):
     )
 
 
-def digirthK_orientations(graph, digirth=Infinity):
+def digirthK_orientations(graph, digirth=+Infinity):
     """Public function to obtain the orientations with at least digirth `digirth` of a graph.
     If digirth is smaller than 3, it defaults to 3. If no digirth is provided,
     it defaults to infinity.Returns an EdgeView's list.
@@ -72,6 +72,8 @@ def _legal_assignments(
     legal_assignment = closure(digraph, partial_assignment, neighbors, digirth)
     if partial_assignment_ind == len(neighbors) and partial_assignment == legal_assignment:
         extended_digraph = extend(digraph, neighbors, partial_assignment, new_v_id)
+        if extended_digraph.girth() < digirth:
+            breakpoint
         _digirthK_orientations(graph, orientations, new_v_id + 1, extended_digraph, digirth)
         return
     if partial_assignment[:partial_assignment_ind] == legal_assignment[:partial_assignment_ind]:
@@ -111,23 +113,19 @@ def extend(digraph, w, d, v):
     return new_digraph
 
 
-def closure(digraph, newD, w, digirth):
+def closure(digraph, d, w, digirth):
     """Computes the closure of assignment d of a digraph taking into accout the digirth."""
-    tmpDigraph = digraph.copy()
-    assignments = dict(zip(w, newD))
+    assignments = dict(zip(w, d))
     v_out_assignments = [node for node, direciton in assignments.items() if direciton == OUTGOING_ASSIGNMENT]
     for vertex in v_out_assignments:
-        _visit(vertex, tmpDigraph, assignments, digirth - 3)
+        _visit(vertex, digraph, assignments, digirth - 3)
     return "".join(assignments.values())
 
 
 def _visit(vertex, digraph, assignment, counter):
+    if vertex in assignment.keys():
+        assignment[vertex] = OUTGOING_ASSIGNMENT
     if counter == 0:
         return
-    if digraph.get_vertex(vertex) == VISITED:
-        return
-    if vertex in assignment:
-        assignment[vertex] = OUTGOING_ASSIGNMENT
-    digraph.set_vertex(vertex, VISITED)
     for vertex2 in digraph.neighbors_out(vertex):
         _visit(vertex2, digraph, assignment, counter - 1)
